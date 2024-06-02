@@ -6,6 +6,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'env/env.dart';
 import 'package:dart_openai/dart_openai.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
+import 'package:intl/intl.dart';
 
 void main() async {
   await _initialize();
@@ -222,7 +223,7 @@ class _NaverMapAppState extends State<NaverMapApp>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildBottomNavigationItem('ㅇㅇ봇', 'assets/bot.png'),
+                    _buildBottomNavigationItem('하냥닝', 'assets/cat.png'),
                     _buildBottomNavigationItem('가게', 'assets/store.png'),
                     _buildBottomNavigationItem('메뉴 룰렛', 'assets/roulette.png'),
                     _buildBottomNavigationItem('셔틀', 'assets/bus.png'),
@@ -318,8 +319,8 @@ class _NaverMapAppState extends State<NaverMapApp>
   Widget _buildBottomNavigationItem(String text, String assetPath) {
     return GestureDetector(
       onTap: () {
-      if (text == 'ㅇㅇ봇') {
-        navigatorKey.currentState?.push( // 추가
+      if (text == '하냥닝') {
+        navigatorKey.currentState?.push(
           MaterialPageRoute(builder: (context) => ChatBotPage()), // 추가
         ); // 추가
       }//
@@ -374,6 +375,7 @@ class _ChatBotPageState extends State<ChatBotPage> {
       _messages.add({'text': botResponse, 'sender': 'bot'});
     });
   }
+
   Future<String> _getBotResponse(String query) async {
     Map<String, String> database = {
       '수강신청 팁': '수강신청을 할 때는 미리 원하는 강의를 찜해두는 것이 좋아요. 수강신청 시작 10분 전에 미리 로그인해두라냥!',
@@ -423,7 +425,8 @@ class _ChatBotPageState extends State<ChatBotPage> {
         ],
       );
 
-      String botResponse = response.choices.first.message?.content?.first.text?.trim() ?? "응답을 가져오는 데 문제가 발생했다냥.. 나중에 다시 시도해주라냥.";
+      String botResponse = response.choices.first.message?.content?.first.text
+          ?.trim() ?? "응답을 가져오는 데 문제가 발생했다냥.. 나중에 다시 시도해주라냥.";
       if (databaseHint.isNotEmpty) {
         botResponse = "$databaseHint 추가적으로, $botResponse";
       }
@@ -433,9 +436,13 @@ class _ChatBotPageState extends State<ChatBotPage> {
       return "응답을 가져오는 데 문제가 발생했다냥.. 나중에 다시 시도해주라냥.";
     }
   }
-
-
-
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? '오후' : '오전';
+    final formattedHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '$period $formattedHour:$minute';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -444,88 +451,102 @@ class _ChatBotPageState extends State<ChatBotPage> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // 뒤로 가기 버튼을 눌렀을 때 이전 화면으로 돌아감
+            Navigator.pop(context);
           },
         ),
         title: Row(
           children: [
             CircleAvatar(
-              backgroundImage: AssetImage('assets/bot.png'), // 프로필 이미지 경로
+              backgroundImage: AssetImage('assets/cat.png'),
               radius: 16,
             ),
             SizedBox(width: 8),
-            Text("하냥닝"), // 프로필 이름
+            Text("하냥닝"),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.keyboard_hide),
-            onPressed: () {
-              FocusScope.of(context).unfocus(); // 키보드 닫기 버튼
-            },
-          ),
-        ],
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isUser = message['sender'] == 'user';
-                return ChatBubble(
-                  clipper: ChatBubbleClipper1(
-                    type: isUser ? BubbleType.sendBubble : BubbleType.receiverBubble,
-                  ),
-                  alignment: isUser ? Alignment.topRight : Alignment.topLeft,
-                  margin: EdgeInsets.only(top: 10),
-                  backGroundColor: isUser ? Colors.pink : Colors.grey[200],
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        message['text'] ?? '',
-                        style: TextStyle(color: isUser ? Colors.white : Colors.black),
-                      ),
-                      Text(
-                        "시각: ${DateTime.now().hour}:${DateTime.now().minute}",
-                        style: TextStyle(fontSize: 10, color: isUser ? Colors.white70 : Colors.black54),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    keyboardType: TextInputType.text,
-                    textInputAction: TextInputAction.done,
-                    decoration: InputDecoration(
-                      hintText: '메시지를 입력하세요...',
-                      border: OutlineInputBorder(
+      body: Container(
+        color: Color(0xFFF8F9FA), // 홈 화면과 유사한 배경색 적용
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final message = _messages[index];
+                  final isUser = message['sender'] == 'user';
+                  return Align(
+                    alignment: isUser ? Alignment.topRight : Alignment.topLeft,
+                    child: Container(
+                      margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                      padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isUser ? Color(0xFFFFCDD2) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 5,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            message['text'] ?? '',
+                            style: TextStyle(
+                                color: isUser ? Colors.black : Colors.black87),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            "${_formatTime(DateTime.now())}",
+                            style: TextStyle(
+                            fontSize: 10,
+                            color: isUser ? Colors.black54 : Colors.black54,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    onSubmitted: (value) {
-                      _sendMessage(); // 엔터키를 눌렀을 때 메시지를 전송하도록 설정
-                    },
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: _sendMessage,
-                ),
-              ],
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        hintText: '메시지를 입력하세요...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onSubmitted: (value) {
+                        _sendMessage();
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.send),
+                    onPressed: _sendMessage,
+                    color: Colors.blue,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
