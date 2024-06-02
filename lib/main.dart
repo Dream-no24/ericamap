@@ -3,10 +3,14 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'env/env.dart';
+import 'package:dart_openai/dart_openai.dart';
+import 'package:flutter_chat_bubble/chat_bubble.dart';
 
 void main() async {
   await _initialize();
   runApp(const NaverMapApp());
+  OpenAI.apiKey = Env.apiKey; // Initializes the package with that API key
 }
 
 // 지도 초기화하기
@@ -27,6 +31,7 @@ class NaverMapApp extends StatefulWidget {
 
 class _NaverMapAppState extends State<NaverMapApp>
     with SingleTickerProviderStateMixin {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>(); // 추가
   late AnimationController _controller;
   late Animation<double> _animation;
   bool isExpanded = false;
@@ -55,6 +60,7 @@ class _NaverMapAppState extends State<NaverMapApp>
     final Completer<NaverMapController> mapControllerCompleter = Completer();
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       home: Scaffold(
         body: Stack(
           children: [
@@ -164,13 +170,13 @@ class _NaverMapAppState extends State<NaverMapApp>
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildCategoryButton('식당', Icons.restaurant, Colors.blue),
-                    _buildCategoryButton('카페', Icons.local_cafe, Colors.brown),
-                    _buildCategoryButton('편의점', Icons.local_convenience_store, Colors.orange),
-                    _buildCategoryButton('약국', Icons.local_pharmacy, Colors.red),
-                    _buildCategoryButton('셀프사진관', Icons.camera, Colors.blueGrey),
-                    _buildCategoryButton('마트', Icons.shopping_basket, Colors.deepOrangeAccent),
-                    _buildCategoryButton('?', Icons.local_hospital, Colors.purple),
+                    _buildCategoryButton('식당', 'assets/spoon.png'),
+                    _buildCategoryButton('카페', 'assets/coffee.png'),
+                    _buildCategoryButton('편의점', 'assets/store.png'),
+                    _buildCategoryButton('약국', 'assets/pill.png'),
+                    _buildCategoryButton('셀프사진관', 'assets/camera.png'),
+                    _buildCategoryButton('?', 'assets/etc.png'),
+                    _buildCategoryButton('?', 'assets/etc.png'),
                   ],
                 ),
               ),
@@ -185,15 +191,15 @@ class _NaverMapAppState extends State<NaverMapApp>
                     axisAlignment: -1.0,
                     child: Column(
                       children: [
-                        _buildSideButton('한식', Icons.rice_bowl, Colors.white, Colors.black, Colors.black),
-                        _buildSideButton('양식', Icons.fastfood, Colors.white, Colors.redAccent, Colors.black),
-                        _buildSideButton('일식', Icons.restaurant, Colors.white, Colors.grey, Colors.black),
-                        _buildSideButton('중식', Icons.dining, Colors.white, Colors.blueAccent, Colors.black),
-                        _buildSideButton('기타', Icons.more_horiz, Colors.white, Colors.black, Colors.black),
+                        _buildSideButton('한식', 'assets/korea.png', Colors.white),
+                        _buildSideButton('양식', 'assets/western.png', Colors.white),
+                        _buildSideButton('일식', 'assets/japan.png', Colors.white),
+                        _buildSideButton('중식', 'assets/china.png', Colors.white),
+                        _buildSideButton('기타', 'assets/etc.png', Colors.white),
                       ],
                     ),
                   ),
-                  _buildSideButton('메뉴', Icons.menu_book, Colors.blue, Colors.white, Colors.white, onPressed: () {
+                  _buildSideButton('메뉴', 'assets/menu.png', Colors.blueAccent, textcolor:Colors.white, onPressed: () {
                     setState(() {
                       if (isExpanded) {
                         _controller.reverse();
@@ -216,11 +222,11 @@ class _NaverMapAppState extends State<NaverMapApp>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildBottomNavigationItem('ㅇㅇ봇', Icons.android, Colors.blueAccent),
-                    _buildBottomNavigationItem('가게', Icons.store, Colors.orange),
-                    _buildBottomNavigationItem('메뉴 룰렛', Icons.casino, Colors.red),
-                    _buildBottomNavigationItem('셔틀', Icons.directions_bus, Colors.blue),
-                    _buildBottomNavigationItem('제휴 정보', Icons.info, Colors.purple),
+                    _buildBottomNavigationItem('ㅇㅇ봇', 'assets/bot.png'),
+                    _buildBottomNavigationItem('가게', 'assets/store.png'),
+                    _buildBottomNavigationItem('메뉴 룰렛', 'assets/roulette.png'),
+                    _buildBottomNavigationItem('셔틀', 'assets/bus.png'),
+                    _buildBottomNavigationItem('제휴 정보', 'assets/info.png'),
                   ],
                 ),
               ),
@@ -231,7 +237,7 @@ class _NaverMapAppState extends State<NaverMapApp>
     );
   }
 
-  Widget _buildCategoryButton(String text, IconData icon, Color color) {
+  Widget _buildCategoryButton(String text, String assetPath) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
       child: Container(
@@ -250,7 +256,7 @@ class _NaverMapAppState extends State<NaverMapApp>
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
           child: Row(
             children: [
-              Icon(icon, color: color),
+              Image.asset(assetPath, width: 24, height: 24),
               SizedBox(width: 5),
               Text(
                 text,
@@ -267,14 +273,15 @@ class _NaverMapAppState extends State<NaverMapApp>
       ),
     );
   }
-  Widget _buildSideButton(String text, IconData icon, Color color, Color iconcolor, Color textcolor, {VoidCallback? onPressed}) {
+
+  Widget _buildSideButton(String text, String assetPath, Color color, {Color textcolor = Colors.black, VoidCallback? onPressed}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: GestureDetector(
         onTap: onPressed,
         child: Container(
-          width: 60,
-          height: 60,
+          width: 50,
+          height: 55,
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(5),
@@ -289,7 +296,7 @@ class _NaverMapAppState extends State<NaverMapApp>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: iconcolor, size: 24),
+              Image.asset(assetPath, width: 24, height: 24),
               SizedBox(height: 2),
               Text(
                 text,
@@ -307,22 +314,219 @@ class _NaverMapAppState extends State<NaverMapApp>
       ),
     );
   }
-  Widget _buildBottomNavigationItem(String text, IconData icon, Color color) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 30, color: color),
-        SizedBox(height: 5),
-        Text(
-          text,
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 14,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w200,
+
+  Widget _buildBottomNavigationItem(String text, String assetPath) {
+    return GestureDetector(
+      onTap: () {
+      if (text == 'ㅇㅇ봇') {
+        navigatorKey.currentState?.push( // 추가
+          MaterialPageRoute(builder: (context) => ChatBotPage()), // 추가
+        ); // 추가
+      }//
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(assetPath, width: 30, height: 30),
+          SizedBox(height: 5),
+          Text(
+            text,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 14,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w200,
+            ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class ChatBotPage extends StatefulWidget {
+  @override
+  _ChatBotPageState createState() => _ChatBotPageState();
+}
+
+class _ChatBotPageState extends State<ChatBotPage> {
+  final List<Map<String, String>> _messages = []; // 사용자와 챗봇의 메시지를 저장하는 리스트
+  final TextEditingController _controller = TextEditingController(); // 텍스트 입력 필드를 제어하는 컨트롤러
+
+  // _sendMessage 함수는 사용자가 메시지를 전송할 때 호출됩니다.
+  // 메시지를 _messages 리스트에 추가하고 입력 필드를 비움
+  void _sendMessage() async {
+    final text = _controller.text;
+    if (text.isEmpty) return;
+
+    setState(() {
+      // 사용자의 메시지를 리스트에 추가
+      _messages.add({'text': text, 'sender': 'user'});
+    });
+
+    _controller.clear(); // 입력 필드를 비웁니다.
+
+    // GPT-3 API를 통해 봇의 응답을 가져옴
+    final botResponse = await _getBotResponse(text);
+
+    setState(() {
+      // 봇의 응답을 리스트에 추가
+      _messages.add({'text': botResponse, 'sender': 'bot'});
+    });
+  }
+  Future<String> _getBotResponse(String query) async {
+    Map<String, String> database = {
+      '수강신청 팁': '수강신청을 할 때는 미리 원하는 강의를 찜해두는 것이 좋아요. 수강신청 시작 10분 전에 미리 로그인해두라냥!',
+      '맛집 추천': '우리 학교 근처 맛집으로는 ABC카페, XYZ식당이 있어요. 특히 ABC카페의 커피는 정말 맛있다냥!',
+      '도서관 이용 팁': '도서관은 오전 9시부터 오후 10시까지 운영된다냥. 조용히 공부할 수 있는 공간이 많으니 이용해보라냥!',
+    };
+
+    try {
+      String databaseHint = '';
+      if (database.containsKey(query)) {
+        databaseHint = database[query] ?? '';
+      }
+
+      final response = await OpenAI.instance.chat.create(
+        model: "gpt-3.5-turbo",
+        messages: [
+          OpenAIChatCompletionChoiceMessageModel(
+            content: [
+              OpenAIChatCompletionChoiceMessageContentItemModel.text(
+                  """
+              You are a helpful assistant that speaks in a friendly tone and always ends your sentences with '냥'. Follow these rules:
+              1. Convert '~습니다' to '~다냥'.
+              2. Convert '~ㅂ니다' to '~다냥'.
+              3. Convert '~어요' to '~다냥'.
+              4. Convert '~아요' to '~다냥'.
+              5. Convert '~했어요' to '~했다냥'.
+              6. Convert '~였어요' to '~였다냥'.
+              7. Convert '~입니다' to '~이다냥'.
+              8. Convert '~에요.' to '라냥'.
+              9. Convert '~세요.' to '냥'.
+              10. Convert command forms ending in '~세요' to '~라냥'.
+              11. Place '냥' before any question mark (?) or exclamation mark (!).
+              Here is a hint to use in your response: $databaseHint
+              """
+              ),
+            ],
+            role: OpenAIChatMessageRole.system,
+          ),
+          OpenAIChatCompletionChoiceMessageModel(
+            content: [
+              OpenAIChatCompletionChoiceMessageContentItemModel.text(
+                query,
+              ),
+            ],
+            role: OpenAIChatMessageRole.user,
+          ),
+        ],
+      );
+
+      String botResponse = response.choices.first.message?.content?.first.text?.trim() ?? "응답을 가져오는 데 문제가 발생했다냥.. 나중에 다시 시도해주라냥.";
+      if (databaseHint.isNotEmpty) {
+        botResponse = "$databaseHint 추가적으로, $botResponse";
+      }
+      return botResponse;
+    } catch (e) {
+      log("Error: $e");
+      return "응답을 가져오는 데 문제가 발생했다냥.. 나중에 다시 시도해주라냥.";
+    }
+  }
+
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context); // 뒤로 가기 버튼을 눌렀을 때 이전 화면으로 돌아감
+          },
         ),
-      ],
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: AssetImage('assets/bot.png'), // 프로필 이미지 경로
+              radius: 16,
+            ),
+            SizedBox(width: 8),
+            Text("하냥닝"), // 프로필 이름
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.keyboard_hide),
+            onPressed: () {
+              FocusScope.of(context).unfocus(); // 키보드 닫기 버튼
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                final isUser = message['sender'] == 'user';
+                return ChatBubble(
+                  clipper: ChatBubbleClipper1(
+                    type: isUser ? BubbleType.sendBubble : BubbleType.receiverBubble,
+                  ),
+                  alignment: isUser ? Alignment.topRight : Alignment.topLeft,
+                  margin: EdgeInsets.only(top: 10),
+                  backGroundColor: isUser ? Colors.pink : Colors.grey[200],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        message['text'] ?? '',
+                        style: TextStyle(color: isUser ? Colors.white : Colors.black),
+                      ),
+                      Text(
+                        "시각: ${DateTime.now().hour}:${DateTime.now().minute}",
+                        style: TextStyle(fontSize: 10, color: isUser ? Colors.white70 : Colors.black54),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    keyboardType: TextInputType.text,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      hintText: '메시지를 입력하세요...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onSubmitted: (value) {
+                      _sendMessage(); // 엔터키를 눌렀을 때 메시지를 전송하도록 설정
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.send),
+                  onPressed: _sendMessage,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
